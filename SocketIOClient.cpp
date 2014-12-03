@@ -183,13 +183,13 @@ void SocketIOClient::setEventHandler(char* eventName,  void (*handler)(EthernetC
 
 //Event data emitting method
 void SocketIOClient::emit(char* event, char* data) {
-	client.print((char)0);
+	client.print((char)129);
+	client.print((char)(27 + strlen(event) + strlen(data)));
 	client.print("5:::{\"name\":\"");
 	client.print(event);
 	client.print("\",\"args\":[\"");
 	client.print(data);
 	client.print("\"]}");
-	client.print((char)255);
 }
 
 /*
@@ -213,15 +213,15 @@ void SocketIOClient::monitor(){
 	while(client.available()) {
 		readLine();
 		dataptr = databuffer;
-		switch(databuffer[0]) {
+		switch(databuffer[2]) {
 			case '1': //connect: [1::]
 				which = 6;
 				break;
 
 			case '2': //heartbeat: [2::]
-				client.print((char)0);
+				client.print((char)129);
+				client.print((char)3);
 				client.print("2::");
-				client.print((char)255);
 				continue;
 
 			case '5': //event: [5:::{"name":"event_name","args":[]}]
