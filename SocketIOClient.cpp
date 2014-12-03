@@ -66,7 +66,8 @@ void SocketIOClient::sendHandshake() {
 	client.print(hostname);
 	client.print(F(":"));
 	client.println(port);
-	client.println(F("Origin: Arduino\r\n"));
+	client.println(F("Origin: Arduino"));
+	client.println();
 }
 
 bool SocketIOClient::readHandshake(){
@@ -129,9 +130,12 @@ bool SocketIOClient::readHandshake(){
 	client.print(hostname);
 	client.print(F(":"));
 	client.println(port);
-	client.println(F("Origin: ArduinoSocketIOClient"));
 	client.println(F("Upgrade: WebSocket"));
-	client.println(F("Connection: Upgrade\r\n"));
+	client.println(F("Connection: Upgrade"));
+	client.println(F("Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw=="));
+	client.println(F("Sec-WebSocket-Version: 13"));
+	client.println(F("Origin: ArduinoSocketIOClient"));
+	client.println();
 
 	//Check for the server's response
 	if(!waitForInput()) return false;
