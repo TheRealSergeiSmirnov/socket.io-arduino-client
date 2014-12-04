@@ -72,11 +72,8 @@ class SocketIOClient {
 		static HashType<char*, void(*)(EthernetClient client, char* data)> hashRawArray[HASH_SIZE];
 		static HashMap<char*, void(*)(EthernetClient client, char* data)> eventHandlers;
 
-		//Private connection methods
-		void sendHandshake();
-		bool readHandshake();
-		bool waitForInput();
 		//Private incoming data reading methods
+		bool waitForInput();
 		void readLine();
 		void eatHeader();
 		void findColon(char which);

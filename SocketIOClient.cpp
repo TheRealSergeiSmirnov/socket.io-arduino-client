@@ -51,14 +51,8 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource) 
 	hostname = theHostname;
 	port = thePort;
 	resource = theResource;
-	//Send handshake to start the socket connection
-	sendHandshake();
-	//Read the handshake's response to know if connection succeed
-	return readHandshake();
-}
 
-void SocketIOClient::sendHandshake() {
-	//Construction of the HTTP request
+	//Send handshake to start the socket connection
 	client.print(F("GET "));
 	client.print(resource);
 	client.println(F("1/ HTTP/1.1"));
@@ -68,9 +62,7 @@ void SocketIOClient::sendHandshake() {
 	client.println(port);
 	client.println(F("Origin: Arduino"));
 	client.println();
-}
 
-bool SocketIOClient::readHandshake(){
 	//Check for the server's response
 	if(!waitForInput()) return false;
 
