@@ -45,17 +45,18 @@ SocketIOClient::SocketIOClient() {
 	Connection methods
 */
 
-bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource) {
+bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource, char* theNsp) {
 	//Ethernet connection as a client, if it fails, socket connection cannot be done
 	if(!client.connect(theHostname, thePort)) return false;
 	hostname = theHostname;
 	port = thePort;
 	resource = theResource;
+	nsp = theNsp;
 
 	//Send handshake to start the socket connection
-	client.print(F("GET "));
+	client.print(F("GET /"));
 	client.print(resource);
-	client.println(F("1/ HTTP/1.1"));
+	client.println(F("/1/ HTTP/1.1"));
 	client.print(F("Host: "));
 	client.print(hostname);
 	client.print(F(":"));
@@ -113,9 +114,9 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource) 
 	Serial.println(F("Reconnected."));
 
 	//Construction of the protocol switching request
-	client.print(F("GET "));
+	client.print(F("GET /"));
 	client.print(resource);
-	client.print(F("1/websocket/"));
+	client.print(F("/1/websocket/"));
 	client.print(sid);
 	client.println(F(" HTTP/1.1"));
 	client.print(F("Host: "));
@@ -138,6 +139,14 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource) 
 		while (client.available()) readLine();
 		client.stop();
 		return false;
+	}
+
+	//Connection to the namespace if any
+	if(nsp != "/") {
+		client.print((char)129);
+		client.print((char)(3 + strlen(nsp)));
+		client.print(F("1::"));
+		client.print(nsp);
 	}
 
 	eatHeader(); //Consume the rest of the header
@@ -175,9 +184,18 @@ void SocketIOClient::setEventHandler(char* eventName,  void (*handler)(EthernetC
 
 //Event data emitting method
 void SocketIOClient::emit(char* event, char* data) {
+	//According to the WebSocket RFC, first byte is 129
 	client.print((char)129);
-	client.print((char)(27 + strlen(event) + strlen(data)));
-	client.print("5:::{\"name\":\"");
+	//Second byte is the length of data
+	if(nsp != "/") {
+		client.print((char)(27 + strlen(nsp) + strlen(event) + strlen(data)));
+	} else {
+		client.print((char)(27 + strlen(event) + strlen(data)));
+	}
+	//Data at the end (socket.io data frame encoded)
+	client.print("5::");
+	if(nsp != "/") client.print(nsp);
+	client.print(":{\"name\":\"");
 	client.print(event);
 	client.print("\",\"args\":[\"");
 	client.print(data);
