@@ -1,0 +1,9 @@
+{
+  "name": "arduino-chat",
+  "version": "0.0.1",
+  "description": "A chat application for Arduino using socket.io library",
+  "dependencies": {
+    "express": "^4.10.4",
+    "socket.io": "^1.2.1"
+  }
+}
