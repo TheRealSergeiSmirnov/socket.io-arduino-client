@@ -68,9 +68,9 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource, 
 	if(!waitForInput()) return false;
 
 	//Check for the "HTTP/1.1 200 OK" response
-	readLine();
+	readInput();
 	if(atoi(&databuffer[9]) != 200) {
-		while(client.available()) readLine();
+		while(client.available()) readInput();
 		client.stop();
 		return false;
 	}
@@ -78,16 +78,7 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource, 
 	//Go to the line [sid:transport:timeout:available_transports]
 	//corresponding to the last line of the response
 	eatHeader(); //Consume the rest of the header
-	readLine(); //Read the next line and save it
-	char databuffer_save[DATA_BUFFER_LEN];
-	memcpy(databuffer_save, (const char*) databuffer, DATA_BUFFER_LEN);
-	readLine(); //Read again
-	//Loop until the line isn't empty
-	while(*databuffer != '\0') {
-		memcpy(databuffer_save, (const char*) databuffer, DATA_BUFFER_LEN);
-		readLine();
-	}
-	memcpy(databuffer, (const char*) databuffer_save, DATA_BUFFER_LEN);
+	readInput(); //Consume the next line (empty)
 
 	//Get the SID in the response
 	char* iptr = databuffer;
@@ -99,14 +90,14 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource, 
 	Serial.println(sid);
 
 	//Consume the rest of the response
-	while(client.available()) readLine();
+	while(client.available()) readInput();
 
 	//Stop the connection
 	client.stop();
 	delay(1000);
 
 	//Reconnect on WebSocket connection
-	Serial.print(F("WebSocket Connect... "));
+	//Serial.print(F("WebSocket Connect... "));
 	if(!client.connect(hostname, port)) {
 		Serial.print(F("Reconnect failed."));
 		return false;
@@ -132,11 +123,13 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource, 
 
 	//Check for the server's response
 	if(!waitForInput()) return false;
+	
+	Serial.println();
 
 	//Check for the "HTTP/1.1 101 Switching Protocols" response
-	readLine();
+	readInput();
 	if(atoi(&databuffer[9]) != 101) {
-		while (client.available()) readLine();
+		while (client.available()) readInput();
 		client.stop();
 		return false;
 	}
@@ -166,7 +159,7 @@ bool SocketIOClient::waitForInput() {
 void SocketIOClient::eatHeader() {
 	//Consume lines to the empty line between the end of the header and the beginning of the response body
 	while(client.available()) {
-		readLine();
+		readInput();
 		if(strlen(databuffer) == 0) break;
 	}
 }
@@ -218,101 +211,58 @@ void SocketIOClient::monitor(){
 	//Stop the method if no data
 	if(!client.available()) return;
 
-	char which;
-
 	while(client.available()) {
-		readLine();
+		readInput();
 		dataptr = databuffer;
-		switch(databuffer[2]) {
+		switch(databuffer[0]) {
 			case '1': //connect: [1::]
-				which = 6;
 				break;
 
 			case '2': //heartbeat: [2::]
 				client.print((char)129);
 				client.print((char)3);
 				client.print("2::");
-				continue;
+				break;
 
 			case '5': //event: [5:::{"name":"event_name","args":[]}]
-				//Get the event name
-				char* evtnm;
-				evtnm = getName(databuffer);
 				//Get the event handler function and call it
-				void (*evhand)(EthernetClient client, char *data );
-				if(eventHandlers.getFunction(evtnm , &evhand)) {
-					evhand(client, databuffer);
-				}
-				//uhm...
-				which = 4;
+				//void (*evhand)(EthernetClient client, char *data );
+				//if(eventHandlers.getFunction(evtnm , &evhand)) {
+				//	evhand(client, databuffer);
+				//}
 				break;
 
 			default:
 				Serial.print("Drop ");
 				Serial.println(dataptr);
-				continue;
 		}
-
-		findColon(which);
-		dataptr += 2;
-
-		//Handle backslash-delimited escapes
-		char *optr = databuffer;
-		while(*dataptr && (*dataptr != '"')) {
-			if(*dataptr == '\\') {
-				++dataptr; //TODO: this just handles "; handle \r, \n, \t, \xdd
-			}
-			*optr++ = *dataptr++;
-		}
-		*optr = 0;
 	}
 }
 
 //Put incoming data's first line into the data buffer
-void SocketIOClient::readLine() {
+void SocketIOClient::readInput() {
 	//dataptr pointer points to the beginning of the buffer
 	dataptr = databuffer;
-	//Stop if there is no more data or if reading reaches buffer's max size
-	while(client.available() && (dataptr < &databuffer[DATA_BUFFER_LEN - 2])) {
-		char c = client.read();
-		if(c == 0) {} //Serial.println(F("NULL"));
-		else if(c == 255) {} //Serial.println(F("0x255"));
-		else if(c == '\r') {}
-		else if(c == '\n') break;
-		else *dataptr++ = c;
+	char c = client.read();
+	if(c != -127) {
+		while(client.available() && c != '\r') {
+			Serial.print(c);
+			*dataptr++ = c;
+			c = client.read();
+		}
+		client.read();
+		Serial.println();
+	} else {
+		int length = client.read();
+		if(length == 126) {
+			length = client.read();
+			length = length << 8;
+			length = length | client.read();
+		}
+		for(int i = 0; i < length; i++) {
+			c = client.read();
+			*dataptr++ = c;
+		}
 	}
 	*dataptr = 0;
-}
-
-//Find the nth colon starting from dataptr
-void SocketIOClient::findColon(char which) {
-	while(*dataptr) {
-		if(*dataptr == ':') {
-			if(--which <= 0) return;
-		}
-		++dataptr;
-	}
-}
-
-//Get the name of the incoming data's event
-char* SocketIOClient::getName(char* databuffer){
-	char* nm = databuffer;
-	char* longname;
-	int quotes = 0;
-	int beg = 0;
-	int end = 0;
-
-	while(*nm && quotes < 3) { 
-		if(*nm  == '"') quotes++;
-		beg++; nm++; 
-	}	
-	longname = nm;
-	end = beg;
-	while(*nm && (*nm != '"')) { end++; nm++; }
-
-	char* name = new char[end - beg + 1];
-	strncpy(name, longname, end - beg);
-	name[end - beg] = '\0';
-
-	return name;
 }

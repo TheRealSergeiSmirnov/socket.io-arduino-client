@@ -39,7 +39,7 @@
 #include "HashMap.h"
 
 //Length of static data buffers
-#define DATA_BUFFER_LEN 120
+#define DATA_BUFFER_LEN 200
 #define SID_LEN 24
 
 //Max size of the HashTable
@@ -75,11 +75,8 @@ class SocketIOClient {
 
 		//Private incoming data reading methods
 		bool waitForInput();
-		void readLine();
+		void readInput();
 		void eatHeader();
-		void findColon(char which);
-		//Private event handling methods
-		char* getName(char* databuffer);
 };
 
 #endif
