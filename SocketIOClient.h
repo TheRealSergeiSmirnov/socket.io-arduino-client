@@ -36,7 +36,8 @@
 #include <Ethernet.h>
 #include <SPI.h>
 
-#include "HashMap.h"
+#include "libraries/HashMap/HashMap.h"
+#include "libraries/ArduinoJson/ArduinoJson.h"
 
 //Length of static data buffers
 #define DATA_BUFFER_LEN 200
