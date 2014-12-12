@@ -225,11 +225,16 @@ void SocketIOClient::monitor(){
 				break;
 
 			case '5': //event: [5:::{"name":"event_name","args":[]}]
+				//We only use the json part of data
+				while(*dataptr != '{') dataptr++;
+				//Getting the name of the event
+				char* evtnm;
+				evtnm = getName(dataptr);
 				//Get the event handler function and call it
-				//void (*evhand)(EthernetClient client, char *data );
-				//if(eventHandlers.getFunction(evtnm , &evhand)) {
-				//	evhand(client, databuffer);
-				//}
+				void (*evhand)(EthernetClient client, char *data );
+				if(eventHandlers.getFunction(evtnm , &evhand)) {
+					evhand(client, dataptr);
+				}
 				break;
 
 			default:
@@ -246,12 +251,10 @@ void SocketIOClient::readInput() {
 	char c = client.read();
 	if(c != -127) {
 		while(client.available() && c != '\r') {
-			Serial.print(c);
 			*dataptr++ = c;
 			c = client.read();
 		}
 		client.read();
-		Serial.println();
 	} else {
 		int length = client.read();
 		if(length == 126) {
@@ -265,4 +268,17 @@ void SocketIOClient::readInput() {
 		}
 	}
 	*dataptr = 0;
+}
+
+//Get the name of the incoming event
+char* SocketIOClient::getName(char* dataptr) {
+	//Copying data not to be modified by json parsing
+	char json[strlen(dataptr)];
+	strcpy(json, dataptr);
+	//Parsing json
+	StaticJsonBuffer<200> jsonBuffer;
+	JsonObject& jObj = jsonBuffer.parseObject(json);
+	//Getting the event name and return it
+	const char* name = jObj["name"];
+	return (char*)name;
 }

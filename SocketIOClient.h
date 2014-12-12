@@ -76,8 +76,9 @@ class SocketIOClient {
 
 		//Private incoming data reading methods
 		bool waitForInput();
-		void readInput();
 		void eatHeader();
+		void readInput();
+		char* getName(char* dataptr);
 };
 
 #endif
