@@ -32,8 +32,8 @@
 #include "SocketIOClient.h"
 
 //Event handling attributes
-HashType <char*, void(*)(EthernetClient client, char* data)> SocketIOClient::hashRawArray[HASH_SIZE];
-HashMap  <char*, void(*)(EthernetClient client, char* data)> SocketIOClient::eventHandlers = HashMap<char*, void(*)(EthernetClient client, char* data)>(hashRawArray, HASH_SIZE);
+HashType <char*, void(*)(EthernetClient client, JsonArray& data)> SocketIOClient::hashRawArray[HASH_SIZE];
+HashMap <char*, void(*)(EthernetClient client, JsonArray& data)> SocketIOClient::eventHandlers = HashMap<char*, void(*)(EthernetClient client, JsonArray& data)>(hashRawArray, HASH_SIZE);
 
 //By default constructor, called when a client is instantiated
 SocketIOClient::SocketIOClient() {
@@ -99,7 +99,7 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource, 
 	//Reconnect on WebSocket connection
 	//Serial.print(F("WebSocket Connect... "));
 	if(!client.connect(hostname, port)) {
-		Serial.print(F("Reconnect failed."));
+		Serial.println(F("Reconnect failed."));
 		return false;
 	}
 	Serial.println(F("Reconnected."));
@@ -123,8 +123,6 @@ bool SocketIOClient::connect(char* theHostname, int thePort, char* theResource, 
 
 	//Check for the server's response
 	if(!waitForInput()) return false;
-	
-	Serial.println();
 
 	//Check for the "HTTP/1.1 101 Switching Protocols" response
 	readInput();
@@ -170,7 +168,7 @@ void SocketIOClient::eatHeader() {
 */
 
 //Map an event name and its handler function
-void SocketIOClient::setEventHandler(char* eventName,  void (*handler)(EthernetClient client, char* data)) {
+void SocketIOClient::setEventHandler(char* eventName,  void (*handler)(EthernetClient client, JsonArray& data)) {
 	if(nbEvent < HASH_SIZE) eventHandlers[nbEvent++](eventName, handler);
 	else Serial.println('Max number of events reached');
 }
@@ -225,17 +223,22 @@ void SocketIOClient::monitor(){
 				break;
 
 			case '5': //event: [5:::{"name":"event_name","args":[]}]
+			{
 				//We only use the json part of data
 				while(*dataptr != '{') dataptr++;
+				StaticJsonBuffer<200> jsonBuffer;
+				JsonObject& jObj = jsonBuffer.parseObject(dataptr);
 				//Getting the name of the event
-				char* evtnm;
-				evtnm = getName(dataptr);
+				const char* evtnm = jObj["name"];
+				//Getting arguments of the event
+				JsonArray& evtargs = jObj["args"];
 				//Get the event handler function and call it
-				void (*evhand)(EthernetClient client, char *data );
-				if(eventHandlers.getFunction(evtnm , &evhand)) {
-					evhand(client, dataptr);
+				void (*evhand)(EthernetClient client, JsonArray& data);
+				if(eventHandlers.getFunction((char*)evtnm , &evhand)) {
+					evhand(client, evtargs);
 				}
 				break;
+			}
 
 			default:
 				Serial.print("Drop ");
@@ -268,17 +271,4 @@ void SocketIOClient::readInput() {
 		}
 	}
 	*dataptr = 0;
-}
-
-//Get the name of the incoming event
-char* SocketIOClient::getName(char* dataptr) {
-	//Copying data not to be modified by json parsing
-	char json[strlen(dataptr)];
-	strcpy(json, dataptr);
-	//Parsing json
-	StaticJsonBuffer<200> jsonBuffer;
-	JsonObject& jObj = jsonBuffer.parseObject(json);
-	//Getting the event name and return it
-	const char* name = jObj["name"];
-	return (char*)name;
 }

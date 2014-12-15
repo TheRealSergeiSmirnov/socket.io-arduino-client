@@ -52,7 +52,7 @@ class SocketIOClient {
 		//Public connection methods
 		bool connect(char* hostname, int port = 80, char* resource = "socket.io", char* nsp = "/");
 		//Public event handling methods
-		void setEventHandler(char* eventName, void (*handler)(EthernetClient client, char *data));
+		void setEventHandler(char* eventName, void (*handler)(EthernetClient client, JsonArray& data));
 		//Public data emitting methods
 		void emit(char* event, char* data);
 		//Monitoring for incoming data
@@ -71,14 +71,13 @@ class SocketIOClient {
 		char* dataptr;
 		//Event handling attributes
 		int nbEvent;
-		static HashType<char*, void(*)(EthernetClient client, char* data)> hashRawArray[HASH_SIZE];
-		static HashMap<char*, void(*)(EthernetClient client, char* data)> eventHandlers;
+		static HashType<char*, void(*)(EthernetClient client, JsonArray& data)> hashRawArray[HASH_SIZE];
+		static HashMap<char*, void(*)(EthernetClient client, JsonArray& data)> eventHandlers;
 
 		//Private incoming data reading methods
 		bool waitForInput();
 		void eatHeader();
 		void readInput();
-		char* getName(char* dataptr);
 };
 
 #endif
