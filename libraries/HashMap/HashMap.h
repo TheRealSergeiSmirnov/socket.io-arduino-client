@@ -25,7 +25,7 @@
 #ifndef HASHMAP_H
 #define HASHMAP_H
 
-#include "../ArduinoJson/ArduinoJson.h"
+#include <ArduinoJson.h>
 
 /* Handle association */
 template<typename hash,typename map>
@@ -69,7 +69,7 @@ class HashMap {
 			Returns true if specified key exists, and
 			sends back the stored function pointer.
 		*/
-		bool getFunction(hash key, void (**handlerp)( EthernetClient client, JsonArray& data  ) ){
+		bool getFunction(hash key, void (**handlerp)( Client& client, JsonArray& data  ) ){
 			for (int i=0; i<size; i++){
 				if (	strcmp( (char*)hashMap[i].getHash(), (char*)key )	== 0	){
 					*handlerp = hashMap[i].getValue();

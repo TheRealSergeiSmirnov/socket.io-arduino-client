@@ -32,13 +32,13 @@
 #include "SocketIOClient.h"
 
 //Event handling attributes
-HashType <char*, void(*)(EthernetClient client, JsonArray& data)> SocketIOClient::hashRawArray[HASH_SIZE];
-HashMap <char*, void(*)(EthernetClient client, JsonArray& data)> SocketIOClient::eventHandlers = HashMap<char*, void(*)(EthernetClient client, JsonArray& data)>(hashRawArray, HASH_SIZE);
+HashType <char*, void(*)(Client& client, JsonArray& data)> SocketIOClient::hashRawArray[HASH_SIZE];
+HashMap <char*, void(*)(Client& client, JsonArray& data)> SocketIOClient::eventHandlers = HashMap<char*, void(*)(Client& client, JsonArray& data)>(hashRawArray, HASH_SIZE);
 
 //By default constructor, called when a client is instantiated
-SocketIOClient::SocketIOClient() {
+SocketIOClient::SocketIOClient(Client& theClient) : client(theClient) {
 	//At the beginning, the number of handled event is null
-	nbEvent = 0;	
+	nbEvent = 0;
 }
 
 /*
@@ -168,7 +168,7 @@ void SocketIOClient::eatHeader() {
 */
 
 //Map an event name and its handler function
-void SocketIOClient::setEventHandler(char* eventName,  void (*handler)(EthernetClient client, JsonArray& data)) {
+void SocketIOClient::setEventHandler(char* eventName,  void (*handler)(Client& client, JsonArray& data)) {
 	if(nbEvent < HASH_SIZE) eventHandlers[nbEvent++](eventName, handler);
 	else Serial.println('Max number of events reached');
 }
@@ -233,7 +233,7 @@ void SocketIOClient::monitor(){
 				//Getting arguments of the event
 				JsonArray& evtargs = jObj["args"];
 				//Get the event handler function and call it
-				void (*evhand)(EthernetClient client, JsonArray& data);
+				void (*evhand)(Client& client, JsonArray& data);
 				if(eventHandlers.getFunction((char*)evtnm , &evhand)) {
 					evhand(client, evtargs);
 				}

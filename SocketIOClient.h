@@ -33,11 +33,12 @@
 #define SocketIOClient_H
 
 #include <Arduino.h>
-#include <Ethernet.h>
+#include <Client.h>
 #include <SPI.h>
 
+#include <ArduinoJson.h>
+
 #include "libraries/HashMap/HashMap.h"
-#include "libraries/ArduinoJson/ArduinoJson.h"
 
 //Length of static data buffers
 #define DATA_BUFFER_LEN 200
@@ -48,11 +49,11 @@
 
 class SocketIOClient {
 	public:
-		SocketIOClient();
+		SocketIOClient(Client& client);
 		//Public connection methods
 		bool connect(char* hostname, int port = 80, char* resource = "socket.io", char* nsp = "/");
 		//Public event handling methods
-		void setEventHandler(char* eventName, void (*handler)(EthernetClient client, JsonArray& data));
+		void setEventHandler(char* eventName, void (*handler)(Client& client, JsonArray& data));
 		//Public data emitting methods
 		void emit(char* event, char* data);
 		//Monitoring for incoming data
@@ -60,7 +61,7 @@ class SocketIOClient {
 
 	private:
 		//Connection attributes
-		EthernetClient client;
+		Client& client;
 		char* hostname;
 		int port;
 		char* resource;
@@ -71,8 +72,8 @@ class SocketIOClient {
 		char* dataptr;
 		//Event handling attributes
 		int nbEvent;
-		static HashType<char*, void(*)(EthernetClient client, JsonArray& data)> hashRawArray[HASH_SIZE];
-		static HashMap<char*, void(*)(EthernetClient client, JsonArray& data)> eventHandlers;
+		static HashType<char*, void(*)(Client& client, JsonArray& data)> hashRawArray[HASH_SIZE];
+		static HashMap<char*, void(*)(Client& client, JsonArray& data)> eventHandlers;
 
 		//Private incoming data reading methods
 		bool waitForInput();

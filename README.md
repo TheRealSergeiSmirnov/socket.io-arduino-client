@@ -4,7 +4,6 @@
 Based on Bill Roy's Arduino Socket.IO Client (which is based on Kevin Rohling's Arduino WebSocket Client) with event handling by @dantaex. Kevin's, Bill's and Dan's documentation is reproduced hereinafter, with changes as needed.
 
 Along the way, all uses of the String class were replaced with fixed char buffers so as to use less memory.
-The bitlashsocketio.ino example provides an integration with Bitlash on the Arduino and a node.js example server that can be used to send Bitlash commands over the Websocket fabric to the Arduino, and see its output in reply.
 
 ## Caveats
 
@@ -17,20 +16,21 @@ Clone this repo into your Arduino Sketchbook directory under libraries, then res
 ## How to use this library
 
 ```
-SocketIOClient client;
+EthernetClient ethClient;
+SocketIOClient client(ethClient);
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 char hostname[] = "148.XXX.XX.XX";
 int port = 3000;
 
 // Socket.io "hello" EVENT handler
-void hello(EthernetClient ethclient, char* data) {
+void hello(Client& client, char* data) {
     Serial.print("[hello] event happening: ");
     Serial.println(data);
     client.emit("goodbye", "Arduino here, goodbye!");
 }
 
 // Socket.io "goodbye" EVENT handler
-void goodbye(EthernetClient ethclient, char* data) {
+void goodbye(Client& client, char* data) {
     Serial.print("[goodbye] event happening: ");
     Serial.println(data);
     Serial.println("That is all.");
@@ -57,7 +57,3 @@ void loop() {
 }
 
 ```
-
-## Examples
-
-There are some examples: EventsExample will show you how to use events, and EchoExample, will connect to echo.websocket.org, which hosts a service that simply echos any messages that you send it via Websocket.  This example sends the message "Hello World!".  If the example runs correctly, the Arduino will receive this same message back over the Websocket and print it via Serial.println.
