@@ -38,7 +38,7 @@
 
 #include <ArduinoJson.h>
 
-#include "libraries/HashMap/HashMap.h"
+#include "HashMap.h"
 
 //Length of static data buffers
 #define DATA_BUFFER_LEN 200

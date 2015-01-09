@@ -12,12 +12,20 @@ This library doesn't support every inch of the Websocket specifications, most no
 ## Installation instructions
 
 Clone this repo into your Arduino Sketchbook directory under libraries, then restart the Arduino IDE so that it notices the new library.  Now, under File\Examples you should see SocketIOClient.
+You also need bblanchon's ArduinoJson library to use SocketIOClient. (https://github.com/bblanchon/ArduinoJson)
 
 ## How to use this library
 
 ```
+#include <SPI.h>
+#include <Ethernet.h>
+
+#include <ArduinoJson.h>
+#include <SocketIOClient.h>
+
 EthernetClient ethClient;
 SocketIOClient client(ethClient);
+
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 char hostname[] = "148.XXX.XX.XX";
 int port = 3000;
@@ -55,5 +63,4 @@ void setup() {
 void loop() {
     client.monitor();
 }
-
 ```
